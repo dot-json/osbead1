@@ -32,10 +32,33 @@ void read_file(char *filename, int size)
         char *name = line;
         char *days = divider + 1;
         int workdays[5] = {0, 0, 0, 0, 0};
+        char *day;
         for (int i = 0; i < 5; i++)
         {
-            workdays[i] = days[i] - '0';
+            switch (i)
+            {
+            case 0:
+                day = "hetfo";
+                break;
+            case 1:
+                day = "kedd";
+                break;
+            case 2:
+                day = "szerda";
+                break;
+            case 3:
+                day = "csutortok";
+                break;
+            case 4:
+                day = "pentek";
+                break;
+            }
+            if (strstr(days, day) != NULL)
+            {
+                workdays[i] = 1;
+            }
         }
+
         // print the name and workdays
         printf("Name: %s\n", name);
         printf("Workdays: ");
