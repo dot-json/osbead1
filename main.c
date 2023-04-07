@@ -1,15 +1,47 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <stdbool.h>
+#include "main.h"
 
 #define MAX_EMPLOYEES 32
+#define FILENAME "employees"
 
-struct Employee
+int main()
 {
-    char name[128];
-    int workdays[5];
-};
+    struct Employee employees[MAX_EMPLOYEES];
+    initEmployees(employees);
+
+    int file_size = count_lines(FILENAME);
+
+    read_file(FILENAME, file_size, employees);
+    write_file(FILENAME, employees);
+    int capacity[] = {2, 4, 6, 3, 4};
+    int **schedule = initSchedule(MAX_EMPLOYEES);
+
+    runMenu(schedule, employees, capacity);
+    return 0;
+}
+
+int count_lines(const char *filename)
+{
+    FILE *fp = fopen(filename, "r");
+    int count = 0;
+    char c;
+
+    if (fp == NULL)
+    {
+        printf("Error opening file %s", filename);
+        return -1;
+    }
+
+    while ((c = fgetc(fp)) != EOF)
+    {
+        if (c == '\n')
+        {
+            count++;
+        }
+    }
+
+    fclose(fp);
+    return count;
+}
 
 void read_file(char *filename, int size, struct Employee *employees)
 {
@@ -65,6 +97,56 @@ void read_file(char *filename, int size, struct Employee *employees)
     fclose(fp);
 }
 
+void write_file(char *filename, struct Employee *employees)
+{
+    FILE *fp = fopen(filename, "w");
+    if (fp == NULL)
+    {
+        printf("Error opening file");
+        exit(1);
+    }
+    for (int i = 0; i < getEmployeeSize(employees); i++)
+    {
+        char line[256];
+        strcpy(line, employees[i].name);
+        strcat(line, ";");
+        for (int j = 0; j < 5; j++)
+        {
+            if (employees[i].workdays[j] == 1)
+            {
+                switch (j)
+                {
+                case 0:
+                    strcat(line, "hetfo ");
+                    break;
+                case 1:
+                    strcat(line, "kedd ");
+                    break;
+                case 2:
+                    strcat(line, "szerda ");
+                    break;
+                case 3:
+                    strcat(line, "csutortok ");
+                    break;
+                case 4:
+                    strcat(line, "pentek ");
+                    break;
+                }
+            }
+        }
+        if (i != getEmployeeSize(employees) - 1)
+        {
+            line[strlen(line) - 1] = '\n';
+        }
+        else
+        {
+            line[strlen(line) - 1] = '\0';
+        }
+        fputs(line, fp);
+    }
+    fclose(fp);
+}
+
 int **initSchedule(int size)
 {
     int **schedule = (int **)malloc(5 * sizeof(int *));
@@ -104,7 +186,7 @@ int getEmployeeSize(struct Employee *employees)
     return size;
 }
 
-void newEmployee(struct Employee *employees, int size)
+void newEmployee(struct Employee *employees, int size, int capacity[])
 {
     char name[128];
     int workdays[5] = {0, 0, 0, 0, 0};
@@ -139,13 +221,22 @@ void newEmployee(struct Employee *employees, int size)
             workdays[i] = 1;
         }
     }
-    // replace the _ with space in the name
-    for (int i = 0; i < strlen(name); i++)
+    bool empty = true;
+    for (int i = 0; i < 5; i++)
     {
-        if (name[i] == '_')
+        if (capacity[i] == 0 && workdays[i] == 1)
         {
-            name[i] = ' ';
+            workdays[i] = 0;
         }
+        if (workdays[i] == 1)
+        {
+            empty = false;
+        }
+    }
+    if (empty)
+    {
+        printf("The selected workdays are full!\n");
+        return;
     }
     strcpy(employees[size].name, name);
     memcpy(employees[size].workdays, workdays, sizeof(workdays));
@@ -162,7 +253,7 @@ void removeEmployee(struct Employee *employees, int size, int index)
     memset(employees[size - 1].workdays, 0, sizeof(employees[size - 1].workdays));
 }
 
-void modifyEmployee(struct Employee *employees, int size, int index)
+void modifyEmployee(struct Employee *employees, int capacity[], int size, int index)
 {
     char name[128];
     int workdays[5] = {0, 0, 0, 0, 0};
@@ -186,6 +277,7 @@ void modifyEmployee(struct Employee *employees, int size, int index)
     }
     if (strcmp(days, "same") != 0)
     {
+        bool empty = true;
         for (int i = 0; i < 5; i++)
         {
             switch (i)
@@ -210,6 +302,22 @@ void modifyEmployee(struct Employee *employees, int size, int index)
             {
                 workdays[i] = 1;
             }
+        }
+        for (int i = 0; i < 5; i++)
+        {
+            if (capacity[i] == 0 && workdays[i] == 1)
+            {
+                workdays[i] = 0;
+            }
+            if (workdays[i] == 1)
+            {
+                empty = false;
+            }
+        }
+        if (empty)
+        {
+            printf("The selected workdays are full!\n");
+            return;
         }
         memcpy(employees[index].workdays, workdays, sizeof(workdays));
     }
@@ -312,10 +420,20 @@ void printEmployees(struct Employee *employees, int size)
     }
 }
 
+void printCapacity(int capacity[])
+{
+    char *days[] = {"HETFO", "KEDD", "SZERDA", "CSUTORTOK", "PENTEK"};
+    for (int i = 0; i < 5; i++)
+    {
+        printf("%s: %d \n", days[i], capacity[i]);
+    }
+}
+
 void runMenu(int **schedule, struct Employee *employees, int capacity[])
 {
     int choice;
     int id;
+    scheduleEmlpoyees(schedule, getEmployeeSize(employees), capacity, employees);
     do
     {
         system("clear");
@@ -326,7 +444,8 @@ void runMenu(int **schedule, struct Employee *employees, int capacity[])
         printf("5. Deschedule all registered employees\n");
         printf("6. List employees\n");
         printf("7. List schedule\n");
-        printf("8. Exit\n");
+        printf("8. Check capacity\n");
+        printf("9. Exit\n");
         printf("Enter operation number: ");
         scanf("%d", &choice);
 
@@ -334,7 +453,9 @@ void runMenu(int **schedule, struct Employee *employees, int capacity[])
         {
         case 1:
             system("clear");
-            newEmployee(employees, getEmployeeSize(employees));
+            newEmployee(employees, getEmployeeSize(employees), capacity);
+            scheduleEmlpoyees(schedule, getEmployeeSize(employees), capacity, employees);
+            write_file(FILENAME, employees);
             break;
         case 2:
             system("clear");
@@ -343,15 +464,17 @@ void runMenu(int **schedule, struct Employee *employees, int capacity[])
             printf("Index of employee to remove: ");
             scanf("%d", &id);
             removeEmployee(employees, getEmployeeSize(employees), id);
+            write_file(FILENAME, employees);
             scheduleEmlpoyees(schedule, getEmployeeSize(employees), capacity, employees);
             break;
         case 3:
             system("clear");
             printEmployees(employees, getEmployeeSize(employees));
-            descheduleEmployees(schedule, getEmployeeSize(employees), capacity, employees);
             printf("Index of employee to modify: ");
             scanf("%d", &id);
-            modifyEmployee(employees, getEmployeeSize(employees), id);
+            modifyEmployee(employees, capacity, getEmployeeSize(employees), id);
+            write_file(FILENAME, employees);
+            descheduleEmployees(schedule, getEmployeeSize(employees), capacity, employees);
             scheduleEmlpoyees(schedule, getEmployeeSize(employees), capacity, employees);
             break;
         case 4:
@@ -375,6 +498,11 @@ void runMenu(int **schedule, struct Employee *employees, int capacity[])
             printSchedule(schedule, getEmployeeSize(employees), employees);
             break;
         case 8:
+            system("clear");
+            printf("Capacity:\n");
+            printCapacity(capacity);
+            break;
+        case 9:
             printf("Exiting...\n");
             return;
             break;
@@ -382,18 +510,5 @@ void runMenu(int **schedule, struct Employee *employees, int capacity[])
         printf("\nPress enter to continue...");
         getchar();
         getchar();
-    } while (choice != 8);
-}
-
-int main()
-{
-    struct Employee employees[MAX_EMPLOYEES];
-    initEmployees(employees);
-    read_file("data", 2, employees);
-    int size = getEmployeeSize(employees);
-    int capacity[] = {2, 4, 6, 3, 4};
-    int **schedule = initSchedule(size);
-
-    runMenu(schedule, employees, capacity);
-    return 0;
+    } while (choice != 9);
 }
