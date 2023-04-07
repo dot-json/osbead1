@@ -109,10 +109,10 @@ void newEmployee(struct Employee *employees, int size)
     char name[128];
     int workdays[5] = {0, 0, 0, 0, 0};
     char days[128];
-    printf("Enter name (Surname_Lastname): ");
-    scanf("%s", name);
-    printf("Enter workdays (delim: ,): ");
-    scanf("%s", days);
+    printf("Enter name: ");
+    scanf(" %[^\n]s", name);
+    printf("Enter workdays: ");
+    scanf(" %[^\n]s", days);
     char *day;
     for (int i = 0; i < 5; i++)
     {
@@ -168,10 +168,10 @@ void modifyEmployee(struct Employee *employees, int size, int index)
     int workdays[5] = {0, 0, 0, 0, 0};
     char *days;
     printf("* Enter 'same' to keep the same data *\n");
-    printf("Enter new name (Surname_Lastname): ");
-    scanf("%s", name);
-    printf("Enter workdays (delim: ,): ");
-    scanf("%s", days);
+    printf("Enter name: ");
+    scanf(" %[^\n]s", name);
+    printf("Enter workdays: ");
+    scanf(" %[^\n]s", days);
     char *day;
     if (strcmp(name, "same") != 0)
     {
